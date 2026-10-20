@@ -31,6 +31,16 @@
     </label>
 
     <section class="group">
+      <h2>啟用網址</h2>
+      <ul class="sites" id="siteList"></ul>
+      <div class="addrow">
+        <input type="text" id="siteInput" placeholder="https://192.168.1.5:3080" spellcheck="false" />
+        <button type="button" id="siteAdd">加入</button>
+      </div>
+      <p class="msg" id="siteMsg" hidden></p>
+    </section>
+
+    <section class="group">
       <h2>顯示範圍</h2>
       <label class="opt">
         <input type="radio" name="scope" value="conversation" />
@@ -55,10 +65,11 @@
     </section>
 
     <p class="foot">
-      設定即時生效，不需重新整理。<br />
-      僅在 DSH 網頁（127.0.0.1 / localhost）生效。
+      設定即時生效，不需重新整理；新增網址後請重新整理該網頁一次。<br />
+      內建網址不可移除；自行加入的網址按「移除」即撤銷權限。
     </p>
 
+    <script src="../sites.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>

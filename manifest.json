@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "DSH 引用助手",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "在 DSH 網頁介面框選文字後，按「引用」送進下方輸入框、或按「複製」放進剪貼簿，省去手動複製貼上。",
   "minimum_chrome_version": "111",
   "icons": {
@@ -10,7 +10,11 @@
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "permissions": ["storage"],
+  "permissions": ["storage", "scripting"],
+  "optional_host_permissions": ["http://*/*", "https://*/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
     "default_title": "DSH 引用助手",
     "default_popup": "popup/popup.html",
