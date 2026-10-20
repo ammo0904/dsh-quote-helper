@@ -1,0 +1,51 @@
+/* ==========================================================================
+ * DSH 引用助手 — 設定橋接腳本（ISOLATED world）
+ *
+ * popup 把設定存進 chrome.storage.local；這裡把設定同步成 <html> 上的
+ * data-dshq-* 屬性，讓跑在 MAIN world 的 quote.js 讀得到
+ * （MAIN world 拿不到 chrome.storage）。
+ * ========================================================================== */
+(() => {
+	'use strict';
+
+	const STORAGE_KEY = 'dshQuoteSettings';
+	const DEFAULTS = { enabled: true, scope: 'conversation', format: 'plain', showCopy: true };
+
+	function apply(raw) {
+		const settings = Object.assign({}, DEFAULTS, raw || {});
+		const root = document.documentElement;
+		if (!root) return false;
+		root.setAttribute('data-dshq-enabled', settings.enabled === false ? '0' : '1');
+		root.setAttribute('data-dshq-scope', settings.scope === 'anywhere' ? 'anywhere' : 'conversation');
+		root.setAttribute('data-dshq-format', settings.format === 'markdown' ? 'markdown' : 'plain');
+		root.setAttribute('data-dshq-copy', settings.showCopy === false ? '0' : '1');
+		return true;
+	}
+
+	function load(attempt) {
+		try {
+			chrome.storage.local.get(STORAGE_KEY, (value) => {
+				if (chrome.runtime.lastError) {
+					apply(null);
+					return;
+				}
+				if (apply(value && value[STORAGE_KEY]) === false && attempt < 50) {
+					setTimeout(() => load(attempt + 1), 20);
+				}
+			});
+		} catch (err) {
+			apply(null);
+		}
+	}
+
+	try {
+		chrome.storage.onChanged.addListener((changes, area) => {
+			if (area !== 'local' || !changes[STORAGE_KEY]) return;
+			apply(changes[STORAGE_KEY].newValue);
+		});
+	} catch (err) {
+		/* 忽略：storage 不可用時用預設值 */
+	}
+
+	load(0);
+})();

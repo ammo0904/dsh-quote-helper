@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DSH 引用助手</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="head">
+      <span class="logo" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M16 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h1a1 1 0 0 1 1 1v1a2 2 0 0 1-2 2h-1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1h1a6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z" />
+          <path d="M5 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h1a1 1 0 0 1 1 1v1a2 2 0 0 1-2 2H4a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1h1a6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z" />
+        </svg>
+      </span>
+      <div class="titles">
+        <h1>DSH 引用助手</h1>
+        <p>框選文字 →「引用」送進輸入框／「複製」進剪貼簿</p>
+      </div>
+    </header>
+
+    <label class="row">
+      <span class="row-label">啟用浮動按鈕</span>
+      <input type="checkbox" id="enabled" />
+    </label>
+
+    <label class="row">
+      <span class="row-label">顯示「複製」按鈕</span>
+      <input type="checkbox" id="showCopy" />
+    </label>
+
+    <section class="group">
+      <h2>顯示範圍</h2>
+      <label class="opt">
+        <input type="radio" name="scope" value="conversation" />
+        <span>只在對話區（建議）</span>
+      </label>
+      <label class="opt">
+        <input type="radio" name="scope" value="anywhere" />
+        <span>整頁任何位置（不含輸入框）</span>
+      </label>
+    </section>
+
+    <section class="group">
+      <h2>引用插入格式</h2>
+      <label class="opt">
+        <input type="radio" name="format" value="plain" />
+        <span>原文照貼</span>
+      </label>
+      <label class="opt">
+        <input type="radio" name="format" value="markdown" />
+        <span>Markdown 引用（每行加 &gt;）</span>
+      </label>
+    </section>
+
+    <p class="foot">
+      設定即時生效，不需重新整理。<br />
+      僅在 DSH 網頁（127.0.0.1 / localhost）生效。
+    </p>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
