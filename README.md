@@ -40,7 +40,7 @@
 ## 目錄結構
 
 ```
-manifest.json          Manifest V3 設定（content scripts 只在 127.0.0.1 / localhost 生效）
+manifest.json          Manifest V3 設定（content scripts 只在 127.0.0.1 / localhost / VPS 的 dsh-149-88-70-170.sslip.io 生效）
 content/quote.js       MAIN world：浮動按鈕、選取判定、引用插入、複製
 content/bridge.js      ISOLATED world：把 chrome.storage 設定同步成 <html data-dshq-*>
 popup/                 設定面板
@@ -55,6 +55,7 @@ icons/                 圖示
 
 ## 版本
 
+- **V2.1（2.1.0）**：支援 VPS 版 DSH 網頁 `https://dsh-149-88-70-170.sslip.io/*`。
 - **V2（2.0.0）**：新增「複製」按鈕與 fallback、按鈕組、popup 新設定。
 - **V1（1.0.0）**：框選後「引用」送進輸入框。
 
