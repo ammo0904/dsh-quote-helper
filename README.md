@@ -25,7 +25,7 @@
 3. 左上角 **載入未封裝項目**，選擇本專案資料夾（含 `manifest.json` 的那一層）。
 4. 回到 DSH 網頁按 `F5` 重新整理。
 
-> 也可以下載 Releases 裡的 `DSH引用助手-V2.zip`，解壓後用同一個方式載入。
+> 也可以下載 [Releases](../../releases/latest) 裡的 `dsh-quote-helper-V2.zip`，解壓後用同一個方式載入。
 
 ## 使用
 
