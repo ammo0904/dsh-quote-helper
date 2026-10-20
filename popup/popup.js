@@ -72,6 +72,15 @@
 
 	document.addEventListener('change', save);
 
+	/* 標題旁顯示版本，方便分辨同時安裝的舊版 */
+	try {
+		const version = chrome.runtime.getManifest().version;
+		const verEl = document.getElementById('ver');
+		if (verEl && version) verEl.textContent = 'v' + version;
+	} catch (err) {
+		/* 忽略：取不到版本就只顯示名稱 */
+	}
+
 	/* ------------------------------------------------------------ 網址清單 */
 
 	function makeRow(pattern, builtin) {

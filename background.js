@@ -97,11 +97,35 @@ async function sync() {
 	return result;
 }
 
+/* --------------------------------------------------------------- 版本徽章 */
+/* 工具列圖示上顯示版本（例如 2.5），滑鼠移上去的提示也會帶完整版本，
+   避免同時裝了舊版時點錯圖示。 */
+function showVersionBadge() {
+	try {
+		const manifest = chrome.runtime.getManifest ? chrome.runtime.getManifest() : null;
+		const version = (manifest && manifest.version) || '';
+		const name = (manifest && manifest.name) || 'DSH 引用助手';
+		const short = version.split('.').slice(0, 2).join('.');
+		if (chrome.action) {
+			if (chrome.action.setBadgeBackgroundColor) chrome.action.setBadgeBackgroundColor({ color: '#4d6bfe' });
+			if (chrome.action.setBadgeTextColor) chrome.action.setBadgeTextColor({ color: '#ffffff' });
+			if (chrome.action.setBadgeText) chrome.action.setBadgeText({ text: short || null });
+			if (chrome.action.setTitle) chrome.action.setTitle({ title: name + (version ? ' v' + version : '') });
+		}
+	} catch (err) {
+		/* 舊版 Chrome 或權限不足時忽略，不影響引用功能 */
+	}
+}
+
+showVersionBadge();
+
 chrome.runtime.onInstalled.addListener(() => {
+	showVersionBadge();
 	sync().catch(() => {});
 });
 
 chrome.runtime.onStartup.addListener(() => {
+	showVersionBadge();
 	sync().catch(() => {});
 });
 

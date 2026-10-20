@@ -59,6 +59,18 @@ body {
   letter-spacing: 0.01em;
 }
 
+.titles h1 .ver {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--hover);
+  color: var(--accent);
+  font-size: 10.5px;
+  font-weight: 600;
+  vertical-align: 1px;
+}
+
 .titles p {
   margin: 1px 0 0;
   font-size: 11.5px;
