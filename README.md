@@ -50,6 +50,8 @@ content/quote.js       MAIN world：浮動按鈕、選取判定、引用插入�
 content/bridge.js      ISOLATED world：把 chrome.storage 設定同步成 <html data-dshq-*>
 popup/                 設定面板（含「啟用網址」管理）
 icons/                 圖示
+tools/                 端到端測試：run-test-v2 / run-test-format / run-test-multi / test-sites / run-test-popup
+legacy/V1/             V1（1.0.0）原始碼備份
 使用說明.md            完整使用說明與疑難排解
 ```
 
@@ -57,6 +59,14 @@ icons/                 圖示
 
 - DSH 的輸入框是 Lexical 0.49（`<div data-composer-input contenteditable>`），不是 `textarea`；`MAIN world` 才拿得到 `rootElement.__lexicalEditor`。
 - 驗證方式：Chrome headless + CDP，在載入真實 Lexical 0.49 的模擬頁上驅動本擴充套件，確認「引用插入」與「複製到剪貼簿」都真的生效（Chrome 155 已封鎖用命令列 `--load-extension` 載入未封裝套件，實機要用 UI 載入）。
+- 測試指令（需要本機 Chrome，會各自起 headless 實例）：
+  ```bash
+  node tools/run-test-v2.mjs      # 引用/複製 10 個情境
+  node tools/run-test-format.mjs  # 四種引用格式＋游標位置
+  node tools/run-test-multi.mjs   # 連續引用依序排＋空行
+  node tools/test-sites.mjs       # 網址管理與 background 動態註冊（用假 chrome API）
+  node tools/run-test-popup.mjs   # popup UI（假 chrome API + CDP）
+  ```
 
 ## 版本
 

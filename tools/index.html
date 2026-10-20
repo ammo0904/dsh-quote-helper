@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <title>DSH 引用助手 — Lexical 0.49 模擬測試</title>
+    <style>
+      body { margin: 0; font: 14px/1.6 "Microsoft JhengHei", sans-serif; background: #1b1b1f; color: #eee; }
+      #transcript { padding: 24px; }
+      #transcript p { margin: 0 0 10px; }
+      #composerSeat { padding: 16px; border-top: 1px solid #333; }
+      #host { min-height: 60px; padding: 10px; border: 1px solid #444; border-radius: 8px; background: #25252b; outline: none; }
+    </style>
+  </head>
+  <body>
+    <div data-conversation-content data-conversation-region="chat" data-conversation-session="test">
+      <div data-conversation-scroll>
+        <div id="transcript">
+          <p id="p1">第一段：引用功能的測試文字。</p><p id="p2">Second line, English text for the test.</p>
+          <pre id="code">const a = 1;
+if (a) {
+  console.log(a);
+}</pre>
+        </div>
+        <div data-composer-seat data-conversation-region="composer">
+          <div id="host" data-composer-input role="textbox" aria-multiline="true" contenteditable="true"></div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      import { createEditor, $getRoot, $createParagraphNode, $createTextNode } from './lexical.mjs';
+
+      const host = document.getElementById('host');
+      const editor = createEditor({
+        namespace: 'quote-test',
+        onError: (error) => {
+          window.__editorError = String((error && error.message) || error);
+          console.error(error);
+        }
+      });
+      editor.setRootElement(host);
+      editor.setEditable(true);
+      editor.update(
+        () => {
+          const root = $getRoot();
+          root.clear();
+          root.append($createParagraphNode());
+        },
+        { discrete: true }
+      );
+
+      window.__t = { editor, $getRoot, $createParagraphNode, $createTextNode, host };
+      window.__ready = true;
+    </script>
+    <script src="./quote.js"></script>
+  </body>
+</html>
