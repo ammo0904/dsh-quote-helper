@@ -419,8 +419,9 @@
 	/**
 	 * 策略 A：直接在 Lexical 模型上插入（等於 DSH 內建貼上的做法）。
 	 * discrete:true 讓這次更新同步提交，函式返回時模型與 DOM 都已更新。
+	 * atEnd=true 時忽略目前游標，一律插到草稿最後（連續引用才會依序往下排）。
 	 */
-	function lexInsert(editor, text) {
+	function lexInsert(editor, text, atEnd) {
 		let outcome = 'skip';
 		try {
 			editor.update(
@@ -430,9 +431,9 @@
 						outcome = 'no-pending-state';
 						return;
 					}
-					let selection = pending._selection;
+					const root = pending._nodeMap && pending._nodeMap.get('root');
+					let selection = atEnd && root && typeof root.selectEnd === 'function' ? root.selectEnd() : pending._selection;
 					if (!selection || typeof selection.insertText !== 'function') {
-						const root = pending._nodeMap && pending._nodeMap.get('root');
 						selection = root && typeof root.selectEnd === 'function' ? root.selectEnd() : null;
 					}
 					if (!selection || typeof selection.insertText !== 'function') {
@@ -537,10 +538,41 @@
 		return context.changed();
 	}
 
+	/** 把游標移到輸入框最後（連續引用時確保接在草稿尾巴）。 */
+	function placeCaretAtEnd(composer) {
+		try {
+			const range = document.createRange();
+			range.selectNodeContents(composer);
+			range.collapse(false);
+			const selection = window.getSelection();
+			if (!selection) return;
+			selection.removeAllRanges();
+			selection.addRange(range);
+		} catch (err) {
+			/* 忽略：選取設定失敗時仍會用模型層的 selectEnd 插入 */
+		}
+	}
+
+	/**
+	 * 現有草稿是否已經「空一行」結尾：
+	 *   ''           → 空草稿，不用分隔
+	 *   '“A”'        → 沒有換行結尾，要補分隔
+	 *   '“A”\n'      → 只有一個換行（相鄰兩行），要補分隔
+	 *   '“A”\n\n'    → 已經空一行，不用再補
+	 */
+	function needsSeparator(existing) {
+		if (!existing || !existing.trim()) return false;
+		return !/\n[ \t]*\n[ \t]*$/.test(existing);
+	}
+
 	async function insertQuote(text) {
 		const composer = findComposer();
 		if (!composer) return 'no-composer';
 		if (isTextControl(composer)) return insertIntoTextControl(composer, text) ? 'text-control' : 'failed';
+
+		/* 使用者在對話區選字時，輸入框其實已經失焦；這時「接著往下排」比
+		   「插在殘留游標處（常常是草稿開頭）」合理，所以先記下有沒有焦點。 */
+		const wasFocused = document.activeElement === composer || composer.contains(document.activeElement);
 
 		try {
 			composer.focus({ preventScroll: true });
@@ -555,8 +587,14 @@
 		const editor = composer.__lexicalEditor || null;
 		const beforeDom = norm(composer.textContent);
 		const beforeModel = editor ? modelText(editor) : null;
+		const existing = beforeModel != null ? beforeModel : composer.textContent || '';
+		/* 連續引用時：前面已空一行就不再補，否則補一個換行把兩段隔開。 */
+		const payload = (needsSeparator(existing) ? '\n' : '') + buildPayload(text);
 		/* 讀得到模型時以模型為準（DOM 專屬的變化不算成功）。 */
 		const modelAuthoritative = !!(editor && beforeModel !== null);
+
+		/* 沒有焦點就一律排到最後，避免每次引用都插回第一行。 */
+		if (!wasFocused) placeCaretAtEnd(composer);
 
 		const context = {
 			changed() {
@@ -565,13 +603,13 @@
 					if (beforeModel !== null && now !== null) return now !== beforeModel;
 				}
 				const domNow = norm(composer.textContent);
-				return domNow !== beforeDom && domNow.indexOf(norm(text)) !== -1;
+				return domNow !== beforeDom && domNow.indexOf(norm(payload)) !== -1;
 			}
 		};
 
 		/* A. Lexical 模型插入（discrete 同步提交，可立即驗證） */
 		if (editor) {
-			const outcome = lexInsert(editor, text);
+			const outcome = lexInsert(editor, payload, !wasFocused);
 			if (outcome === 'ok') {
 				if (modelAuthoritative) {
 					if (modelText(editor) !== beforeModel) return 'lexical';
@@ -582,13 +620,13 @@
 		}
 
 		/* B. 合成 paste 事件（走 DSH 自己的貼上處理） */
-		if (synthPaste(composer, text) && (await verifyChange(context))) return 'paste';
+		if (synthPaste(composer, payload) && (await verifyChange(context))) return 'paste';
 
 		/* C. execCommand('insertText') */
-		if (execInsert(text) && (await verifyChange(context))) return 'exec';
+		if (execInsert(payload) && (await verifyChange(context))) return 'exec';
 
 		/* D. 直接改 DOM（最後手段） */
-		if (domInsert(composer, text) && (await verifyChange(context))) return 'dom';
+		if (domInsert(composer, payload) && (await verifyChange(context))) return 'dom';
 
 		return 'failed';
 	}
@@ -659,7 +697,8 @@
 		busy = true;
 		let result = 'failed';
 		try {
-			result = await insertQuote(buildPayload(text));
+			/* quoteText 是原文；格式與分隔換行在 insertQuote 內組（要看到現有草稿才能決定）。 */
+			result = await insertQuote(text);
 		} catch (err) {
 			result = 'failed';
 		} finally {
