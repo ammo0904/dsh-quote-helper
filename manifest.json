@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "DSH 引用助手",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "description": "在 DSH 網頁介面框選文字後，按「引用」送進下方輸入框、或按「複製」放進剪貼簿，省去手動複製貼上。",
   "minimum_chrome_version": "111",
   "icons": {

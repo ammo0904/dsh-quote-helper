@@ -97,19 +97,16 @@ async function sync() {
 	return result;
 }
 
-/* --------------------------------------------------------------- 版本徽章 */
-/* 工具列圖示上顯示版本（例如 2.5），滑鼠移上去的提示也會帶完整版本，
-   避免同時裝了舊版時點錯圖示。 */
-function showVersionBadge() {
+/* --------------------------------------------------------------- 版本標示 */
+/* 版本只顯示在 popup 介面上（標題旁）；工具列圖示不掛徽章。
+   這裡只把版本寫進滑鼠提示，並清掉舊版可能留下的徽章。 */
+function showVersionTitle() {
 	try {
 		const manifest = chrome.runtime.getManifest ? chrome.runtime.getManifest() : null;
 		const version = (manifest && manifest.version) || '';
 		const name = (manifest && manifest.name) || 'DSH 引用助手';
-		const short = version.split('.').slice(0, 2).join('.');
 		if (chrome.action) {
-			if (chrome.action.setBadgeBackgroundColor) chrome.action.setBadgeBackgroundColor({ color: '#4d6bfe' });
-			if (chrome.action.setBadgeTextColor) chrome.action.setBadgeTextColor({ color: '#ffffff' });
-			if (chrome.action.setBadgeText) chrome.action.setBadgeText({ text: short || null });
+			if (chrome.action.setBadgeText) chrome.action.setBadgeText({ text: '' });
 			if (chrome.action.setTitle) chrome.action.setTitle({ title: name + (version ? ' v' + version : '') });
 		}
 	} catch (err) {
@@ -117,15 +114,15 @@ function showVersionBadge() {
 	}
 }
 
-showVersionBadge();
+showVersionTitle();
 
 chrome.runtime.onInstalled.addListener(() => {
-	showVersionBadge();
+	showVersionTitle();
 	sync().catch(() => {});
 });
 
 chrome.runtime.onStartup.addListener(() => {
-	showVersionBadge();
+	showVersionTitle();
 	sync().catch(() => {});
 });
 
