@@ -22,6 +22,11 @@
 		root.setAttribute('data-dshq-format', safeFormat);
 		root.setAttribute('data-dshq-copy', settings.showCopy === false ? '0' : '1');
 		root.setAttribute('data-dshq-break', settings.breakLine === false ? '0' : '1');
+		try {
+			root.setAttribute('data-dshq-version', chrome.runtime.getManifest().version);
+		} catch (err) {
+			/* 取不到版本就留著舊值 */
+		}
 		return true;
 	}
 

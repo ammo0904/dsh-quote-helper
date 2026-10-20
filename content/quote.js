@@ -52,6 +52,7 @@
 	/* ---------------------------------------------------------------- 狀態 */
 
 	const settings = { enabled: true, scope: 'conversation', format: 'double', showCopy: true, breakLine: true };
+	const FORMAT_LABEL = { double: '雙引號', corner: '中文引號', markdown: 'Markdown', plain: '原文照貼' };
 	let quoteText = '';
 	let copyText = '';
 	let lastComposer = null;
@@ -706,6 +707,12 @@
 		}
 		if (result === 'no-composer') notify('找不到輸入框：請先開啟一個對話');
 		else if (result === 'failed') notify('引用失敗：請於 DSH 網頁重試');
+		else {
+			/* 成功時回報「哪一版、哪種格式」——若看不到這行提示，代表跑的是舊版擴充套件。 */
+			const version =
+				(document.documentElement && document.documentElement.getAttribute('data-dshq-version')) || '';
+			notify('已引用（' + (FORMAT_LABEL[settings.format] || '原文照貼') + (version ? ' · v' + version : '') + '）');
+		}
 	}
 
 	async function onCopyClick(event) {
