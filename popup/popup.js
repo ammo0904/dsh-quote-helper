@@ -9,11 +9,12 @@
 
 	const STORAGE_KEY = 'dshQuoteSettings';
 	const SITES_KEY = 'dshQuoteSites';
-	const DEFAULTS = { enabled: true, scope: 'conversation', format: 'plain', showCopy: true };
+	const DEFAULTS = { enabled: true, scope: 'conversation', format: 'double', showCopy: true, breakLine: true };
 	const SITES = window.DSHQ_SITES || { BUILTIN: [], toPattern: () => ({ ok: false, error: 'sites.js 未載入' }) };
 
 	const enabledBox = document.getElementById('enabled');
 	const showCopyBox = document.getElementById('showCopy');
+	const breakLineBox = document.getElementById('breakLine');
 	const siteList = document.getElementById('siteList');
 	const siteInput = document.getElementById('siteInput');
 	const siteAdd = document.getElementById('siteAdd');
@@ -47,6 +48,7 @@
 		const value = Object.assign({}, DEFAULTS, settings || {});
 		enabledBox.checked = value.enabled !== false;
 		showCopyBox.checked = value.showCopy !== false;
+		if (breakLineBox) breakLineBox.checked = value.breakLine !== false;
 		const scope = document.querySelector('input[name="scope"][value="' + value.scope + '"]');
 		if (scope) scope.checked = true;
 		const format = document.querySelector('input[name="format"][value="' + value.format + '"]');
@@ -57,6 +59,7 @@
 		const settings = {
 			enabled: enabledBox.checked,
 			showCopy: showCopyBox.checked,
+			breakLine: breakLineBox ? breakLineBox.checked : true,
 			scope: checkedValue('scope', DEFAULTS.scope),
 			format: checkedValue('format', DEFAULTS.format)
 		};

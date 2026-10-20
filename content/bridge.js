@@ -9,16 +9,19 @@
 	'use strict';
 
 	const STORAGE_KEY = 'dshQuoteSettings';
-	const DEFAULTS = { enabled: true, scope: 'conversation', format: 'plain', showCopy: true };
+	const DEFAULTS = { enabled: true, scope: 'conversation', format: 'double', showCopy: true, breakLine: true };
 
 	function apply(raw) {
 		const settings = Object.assign({}, DEFAULTS, raw || {});
 		const root = document.documentElement;
 		if (!root) return false;
+		const format = settings.format;
+		const safeFormat = format === 'plain' || format === 'corner' || format === 'markdown' ? format : 'double';
 		root.setAttribute('data-dshq-enabled', settings.enabled === false ? '0' : '1');
 		root.setAttribute('data-dshq-scope', settings.scope === 'anywhere' ? 'anywhere' : 'conversation');
-		root.setAttribute('data-dshq-format', settings.format === 'markdown' ? 'markdown' : 'plain');
+		root.setAttribute('data-dshq-format', safeFormat);
 		root.setAttribute('data-dshq-copy', settings.showCopy === false ? '0' : '1');
+		root.setAttribute('data-dshq-break', settings.breakLine === false ? '0' : '1');
 		return true;
 	}
 

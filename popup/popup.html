@@ -30,6 +30,11 @@
       <input type="checkbox" id="showCopy" />
     </label>
 
+    <label class="row">
+      <span class="row-label">引用後換行（游標到下一行）</span>
+      <input type="checkbox" id="breakLine" />
+    </label>
+
     <section class="group">
       <h2>啟用網址</h2>
       <ul class="sites" id="siteList"></ul>
@@ -55,12 +60,20 @@
     <section class="group">
       <h2>引用插入格式</h2>
       <label class="opt">
-        <input type="radio" name="format" value="plain" />
-        <span>原文照貼</span>
+        <input type="radio" name="format" value="double" />
+        <span>加上雙引號 “…”（預設）</span>
+      </label>
+      <label class="opt">
+        <input type="radio" name="format" value="corner" />
+        <span>加上中文引號「…」</span>
       </label>
       <label class="opt">
         <input type="radio" name="format" value="markdown" />
         <span>Markdown 引用（每行加 &gt;）</span>
+      </label>
+      <label class="opt">
+        <input type="radio" name="format" value="plain" />
+        <span>原文照貼（不加符號）</span>
       </label>
     </section>
 

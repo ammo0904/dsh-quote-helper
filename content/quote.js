@@ -51,7 +51,7 @@
 
 	/* ---------------------------------------------------------------- 狀態 */
 
-	const settings = { enabled: true, scope: 'conversation', format: 'plain', showCopy: true };
+	const settings = { enabled: true, scope: 'conversation', format: 'double', showCopy: true, breakLine: true };
 	let quoteText = '';
 	let copyText = '';
 	let lastComposer = null;
@@ -105,8 +105,11 @@
 		if (!root) return;
 		settings.enabled = root.getAttribute('data-dshq-enabled') !== '0';
 		settings.scope = root.getAttribute('data-dshq-scope') === 'anywhere' ? 'anywhere' : 'conversation';
-		settings.format = root.getAttribute('data-dshq-format') === 'markdown' ? 'markdown' : 'plain';
+		const format = root.getAttribute('data-dshq-format');
+		settings.format =
+			format === 'corner' || format === 'markdown' || format === 'plain' ? format : 'double';
 		settings.showCopy = root.getAttribute('data-dshq-copy') !== '0';
+		settings.breakLine = root.getAttribute('data-dshq-break') !== '0';
 	}
 
 	function watchSettings() {
@@ -119,7 +122,7 @@
 		});
 		observer.observe(root, {
 			attributes: true,
-			attributeFilter: ['data-dshq-enabled', 'data-dshq-scope', 'data-dshq-format', 'data-dshq-copy']
+			attributeFilter: ['data-dshq-enabled', 'data-dshq-scope', 'data-dshq-format', 'data-dshq-copy', 'data-dshq-break']
 		});
 	}
 
@@ -277,13 +280,28 @@
 		return text.replace(/^\n+/, '').replace(/\n+$/, '');
 	}
 
-	/** 依「插入格式」設定加工要送進輸入框的文字。 */
-	function formatForQuote(text) {
-		if (settings.format !== 'markdown') return text;
-		return text
-			.split('\n')
-			.map((line) => (line ? '> ' + line : '>'))
-			.join('\n');
+	/**
+	 * 依設定加工要送進輸入框的文字：
+	 *   plain  原文照貼
+	 *   double 整段用雙引號 “” 包起來（預設，最貼近「引用」的直覺）
+	 *   corner 整段用中文引號「」包起來
+	 *   markdown 每行前面加 "> "
+	 * breakLine 開啟時最後補一個換行，游標會停在下一行，可以直接接著打字。
+	 */
+	function buildPayload(text) {
+		let out = text;
+		if (settings.format === 'markdown') {
+			out = text
+				.split('\n')
+				.map((line) => (line ? '> ' + line : '>'))
+				.join('\n');
+		} else if (settings.format === 'double') {
+			out = '“' + text + '”';
+		} else if (settings.format === 'corner') {
+			out = '「' + text + '」';
+		}
+		if (settings.breakLine) out += '\n';
+		return out;
 	}
 
 	function refresh() {
@@ -309,7 +327,7 @@
 			hideBar();
 			return;
 		}
-		quoteText = canQuote ? formatForQuote(text) : '';
+		quoteText = canQuote ? text : '';
 		copyText = text;
 		showBar(picked.rect, { quote: canQuote, copy: canCopy });
 	}
@@ -641,7 +659,7 @@
 		busy = true;
 		let result = 'failed';
 		try {
-			result = await insertQuote(text);
+			result = await insertQuote(buildPayload(text));
 		} catch (err) {
 			result = 'failed';
 		} finally {
