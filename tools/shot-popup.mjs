@@ -7,8 +7,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const EXT = path.resolve(HERE, '..', '..', 'DSH引用助手-V2');
-const CHROME = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+const EXT = process.env.EXT_DIR ? path.resolve(process.env.EXT_DIR) : path.resolve(HERE, '..', '..', 'DSH引用助手-V2');
+const CHROME = process.env.CHROME || (fs.existsSync('/opt/chrome-linux64/chrome') ? '/opt/chrome-linux64/chrome' : 'C:\Program Files\Google\Chrome\Application\chrome.exe');
 const OUT = path.resolve(HERE, 'popup-shot.png');
 const PORT = 8796;
 const CDP_PORT = 9338;
@@ -69,7 +69,9 @@ function send(socket, method, params) {
 const main = async () => {
   await new Promise((resolve) => server.listen(PORT, '127.0.0.1', resolve));
   const profile = path.join(os.tmpdir(), 'popup-shot-' + Date.now());
-  const chrome = spawn(CHROME, ['--headless=new', `--remote-debugging-port=${CDP_PORT}`, `--user-data-dir=${profile}`, '--no-first-run', '--disable-gpu', '--disable-extensions', '--window-size=268,900', `http://127.0.0.1:${PORT}/popup.html`], { stdio: 'ignore' });
+  const chrome = spawn(CHROME, ['--headless=new',
+      '--no-sandbox',
+      '--disable-dev-shm-usage', `--remote-debugging-port=${CDP_PORT}`, `--user-data-dir=${profile}`, '--no-first-run', '--disable-gpu', '--disable-extensions', '--window-size=268,900', `http://127.0.0.1:${PORT}/popup.html`], { stdio: 'ignore' });
   let socket = null;
   try {
     let page = null;

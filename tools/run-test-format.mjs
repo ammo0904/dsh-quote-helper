@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const EXT = process.env.EXT_DIR ? path.resolve(process.env.EXT_DIR) : path.resolve(HERE, '..', '..', 'DSH引用助手-V2');
-const CHROME = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+const CHROME = process.env.CHROME || (fs.existsSync('/opt/chrome-linux64/chrome') ? '/opt/chrome-linux64/chrome' : 'C:\Program Files\Google\Chrome\Application\chrome.exe');
 const PORT = 8794;
 const CDP_PORT = 9336;
 
@@ -191,6 +191,8 @@ const main = async () => {
     CHROME,
     [
       '--headless=new',
+      '--no-sandbox',
+      '--disable-dev-shm-usage',
       `--remote-debugging-port=${CDP_PORT}`,
       `--user-data-dir=${profileDir}`,
       '--no-first-run',

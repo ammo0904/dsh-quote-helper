@@ -7,7 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const EXT = path.resolve(HERE, '..', '..', 'DSH引用助手-V2');
+const EXT = process.env.EXT_DIR ? path.resolve(process.env.EXT_DIR) : path.resolve(HERE, '..', '..', 'DSH引用助手-V2');
 const results = [];
 const ok = (name, pass, detail) => results.push({ name, pass: !!pass, detail: detail === undefined ? '' : detail });
 

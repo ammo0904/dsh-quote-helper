@@ -24,7 +24,7 @@ const EXT_DIR = process.env.EXT_DIR
   ? path.resolve(process.env.EXT_DIR)
   : path.resolve(HERE, '..', '..', 'DSH引用助手-V2');
 const QUOTE_JS = path.join(EXT_DIR, 'content', 'quote.js');
-const CHROME = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+const CHROME = process.env.CHROME || (fs.existsSync('/opt/chrome-linux64/chrome') ? '/opt/chrome-linux64/chrome' : 'C:\Program Files\Google\Chrome\Application\chrome.exe');
 const PORT = 8792;
 const CDP_PORT = 9334;
 const ORIGIN = `http://127.0.0.1:${PORT}`;
@@ -62,6 +62,8 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 function launchChrome(profileDir) {
   const args = [
     '--headless=new',
+      '--no-sandbox',
+      '--disable-dev-shm-usage',
     `--remote-debugging-port=${CDP_PORT}`,
     `--user-data-dir=${profileDir}`,
     '--no-first-run',

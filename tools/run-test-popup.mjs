@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const EXT = process.env.EXT_DIR ? path.resolve(process.env.EXT_DIR) : path.resolve(HERE, '..', '..', 'DSH引用助手-V2');
-const CHROME = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+const CHROME = process.env.CHROME || (fs.existsSync('/opt/chrome-linux64/chrome') ? '/opt/chrome-linux64/chrome' : 'C:\Program Files\Google\Chrome\Application\chrome.exe');
 const PORT = 8793;
 const CDP_PORT = 9335;
 const MANIFEST_VERSION = JSON.parse(fs.readFileSync(path.join(EXT, 'manifest.json'), 'utf8')).version;
@@ -105,6 +105,16 @@ const PAGE_SCRIPT = `(async () => {
   out.initial = rows();
   out.initialBuiltinCount = out.initial.filter((r) => r.builtin).length;
   out.initialCustom = out.initial.filter((r) => !r.builtin).map((r) => r.pattern);
+
+  /* 1.5 「執行文字」欄位：預設值與修改後存檔 */
+  const execInput = document.getElementById('execText');
+  out.execText = { exists: !!execInput, value: execInput ? execInput.value : null };
+  if (execInput) {
+    execInput.value = '開始吧';
+    execInput.dispatchEvent(new Event('input', { bubbles: true }));
+    await sleep(500);
+    out.execText.saved = JSON.parse(JSON.stringify(window.__store.dshQuoteSettings || {}));
+  }
 
   /* 1. 正常新增：帶 port 的區網網址 */
   setInput('https://192.168.1.5:3080');
@@ -222,6 +232,8 @@ const main = async () => {
     CHROME,
     [
       '--headless=new',
+      '--no-sandbox',
+      '--disable-dev-shm-usage',
       `--remote-debugging-port=${CDP_PORT}`,
       `--user-data-dir=${profileDir}`,
       '--no-first-run',
@@ -261,6 +273,8 @@ const main = async () => {
       fails.push('no result');
     } else {
       check('初始載入 3 個內建網址', value.initialBuiltinCount === 3, JSON.stringify(value.initialBuiltinCount));
+      check('popup 有「執行文字」欄位（預設執行！）', value.execText.exists && value.execText.value === '執行！', JSON.stringify(value.execText));
+      check('執行文字改了會存檔', value.execText.saved && value.execText.saved.execText === '開始吧', JSON.stringify(value.execText && value.execText.saved));
       check('標題旁顯示版本徽章', value.versionBadge === 'v' + MANIFEST_VERSION, JSON.stringify(value.versionBadge));
       check('初始載入已存的 1 個自訂網址', value.initialCustom.length === 1 && value.initialCustom[0] === 'https://pre.example.com/*', JSON.stringify(value.initialCustom));
       check('新增時要求了正確的 origin', value.add.request.length === 1 && value.add.request[0].origins[0] === 'https://192.168.1.5/*', JSON.stringify(value.add.request));

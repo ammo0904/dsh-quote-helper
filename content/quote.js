@@ -5,6 +5,8 @@
  *   1. 在 DSH 網頁框選文字後，於選取範圍旁顯示浮動按鈕組：
  *        「引用」＝把框選文字送進下方輸入框（DSH 的 Lexical 編輯器），
  *                 插入位置＝輸入框裡原本的游標位置；沒有游標就接在草稿最後。
+ *        「引用＋執行」＝引用後換行加上「執行！」（可在 popup 自訂文字），
+ *                 再自動送出（模擬 Enter，等於按下送出鍵）。
  *        「複製」＝把框選文字放進系統剪貼簿（按鈕版 Ctrl+C），
  *                 複製後跳出「已複製」提示；不需要輸入框也能用。
  *
@@ -48,10 +50,19 @@
 	const WAIT_TIMEOUT = 300;
 	const SETTLE_MS = 150;
 	const TOAST_MS = 1800;
+	const SEND_TIMEOUT = 900;
+	const EXEC_DEFAULT = '執行！';
 
 	/* ---------------------------------------------------------------- 狀態 */
 
-	const settings = { enabled: true, scope: 'conversation', format: 'double', showCopy: true, breakLine: true };
+	const settings = {
+		enabled: true,
+		scope: 'conversation',
+		format: 'double',
+		showCopy: true,
+		breakLine: true,
+		execText: EXEC_DEFAULT
+	};
 	const FORMAT_LABEL = { double: '雙引號', corner: '中文引號', markdown: 'Markdown', plain: '原文照貼' };
 	let quoteText = '';
 	let copyText = '';
@@ -60,6 +71,7 @@
 	let shadow = null;
 	let bar = null;
 	let quoteBtn = null;
+	let execBtn = null;
 	let copyBtn = null;
 	let toast = null;
 	let toastTimer = 0;
@@ -111,6 +123,8 @@
 			format === 'corner' || format === 'markdown' || format === 'plain' ? format : 'double';
 		settings.showCopy = root.getAttribute('data-dshq-copy') !== '0';
 		settings.breakLine = root.getAttribute('data-dshq-break') !== '0';
+		const execText = root.getAttribute('data-dshq-exec-text');
+		settings.execText = execText && execText.trim() ? execText : EXEC_DEFAULT;
 	}
 
 	function watchSettings() {
@@ -123,7 +137,14 @@
 		});
 		observer.observe(root, {
 			attributes: true,
-			attributeFilter: ['data-dshq-enabled', 'data-dshq-scope', 'data-dshq-format', 'data-dshq-copy', 'data-dshq-break']
+			attributeFilter: [
+				'data-dshq-enabled',
+				'data-dshq-scope',
+				'data-dshq-format',
+				'data-dshq-copy',
+				'data-dshq-break',
+				'data-dshq-exec-text'
+			]
 		});
 	}
 
@@ -143,6 +164,12 @@
 		'<path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/>' +
 		'</svg>';
 
+	const EXEC_SVG =
+		'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+		'stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+		'<path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/>' +
+		'</svg>';
+
 	function ensureUI() {
 		if (host && host.isConnected && shadow && bar) return true;
 		if (!document.body) return false;
@@ -156,13 +183,15 @@
 		shadow.innerHTML =
 			'<style>' +
 			'.dq-bar{position:fixed;display:inline-flex;gap:6px;align-items:center;}' +
-			'.dq-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 11px 7px 9px;' +
+			'.dq-btn{display:inline-flex;align-items:center;flex:none;gap:6px;padding:7px 11px 7px 9px;' +
 			'border:1px solid rgba(255,255,255,.18);border-radius:9px;background:#2c2c31;color:#f7f7f8;' +
 			'font:500 13px/1 "Segoe UI","Microsoft JhengHei",system-ui,-apple-system,sans-serif;' +
 			'letter-spacing:.02em;cursor:pointer;white-space:nowrap;user-select:none;-webkit-user-select:none;' +
 			'box-shadow:0 8px 22px rgba(0,0,0,.35),0 1px 2px rgba(0,0,0,.28);' +
 			'transition:background .12s ease,transform .08s ease;}' +
 			'.dq-btn:hover{background:#3b3b42;}' +
+			'.dq-btn.dq-exec{background:#2f5fd0;border-color:rgba(255,255,255,.26);}' +
+			'.dq-btn.dq-exec:hover{background:#3a6ce0;}' +
 			'.dq-btn:active{transform:translateY(1px);}' +
 			'.dq-btn svg{display:block;flex:none;}' +
 			'.dq-toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);max-width:60vw;' +
@@ -175,6 +204,9 @@
 			'<button class="dq-btn dq-quote" type="button" tabindex="-1">' +
 			QUOTE_SVG +
 			'<span>引用</span></button>' +
+			'<button class="dq-btn dq-exec" type="button" tabindex="-1">' +
+			EXEC_SVG +
+			'<span>引用＋執行</span></button>' +
 			'<button class="dq-btn dq-copy" type="button" tabindex="-1">' +
 			COPY_SVG +
 			'<span>複製</span></button>' +
@@ -183,11 +215,14 @@
 
 		bar = shadow.querySelector('.dq-bar');
 		quoteBtn = shadow.querySelector('.dq-quote');
+		execBtn = shadow.querySelector('.dq-exec');
 		copyBtn = shadow.querySelector('.dq-copy');
 		toast = shadow.querySelector('.dq-toast');
 		quoteBtn.addEventListener('mousedown', onButtonMouseDown, true);
+		execBtn.addEventListener('mousedown', onButtonMouseDown, true);
 		copyBtn.addEventListener('mousedown', onButtonMouseDown, true);
 		quoteBtn.addEventListener('click', onQuoteClick, true);
+		execBtn.addEventListener('click', onExecClick, true);
 		copyBtn.addEventListener('click', onCopyClick, true);
 
 		document.body.appendChild(host);
@@ -195,7 +230,7 @@
 	}
 
 	function placeBar(rect) {
-		const width = bar.offsetWidth || 132;
+		const width = bar.offsetWidth || 270;
 		const height = bar.offsetHeight || 31;
 		const gap = 8;
 		let top = rect.top - height - gap;
@@ -209,12 +244,13 @@
 		bar.style.left = Math.round(left) + 'px';
 	}
 
-	/** flags.quote＝顯示「引用」；flags.copy＝顯示「複製」 */
+	/** flags.quote＝顯示「引用」；flags.exec＝顯示「引用＋執行」；flags.copy＝顯示「複製」 */
 	function showBar(rect, flags) {
 		if (!ensureUI()) return;
 		quoteBtn.hidden = !flags.quote;
+		execBtn.hidden = !flags.exec;
 		copyBtn.hidden = !flags.copy;
-		if (quoteBtn.hidden && copyBtn.hidden) {
+		if (quoteBtn.hidden && execBtn.hidden && copyBtn.hidden) {
 			bar.hidden = true;
 			return;
 		}
@@ -282,27 +318,38 @@
 	}
 
 	/**
-	 * 依設定加工要送進輸入框的文字：
+	 * 依設定把選取文字包成引用格式（不含結尾換行）：
 	 *   plain  原文照貼
 	 *   double 整段用雙引號 “” 包起來（預設，最貼近「引用」的直覺）
 	 *   corner 整段用中文引號「」包起來
 	 *   markdown 每行前面加 "> "
-	 * breakLine 開啟時最後補一個換行，游標會停在下一行，可以直接接著打字。
 	 */
-	function buildPayload(text) {
-		let out = text;
+	function formatQuote(text) {
 		if (settings.format === 'markdown') {
-			out = text
+			return text
 				.split('\n')
 				.map((line) => (line ? '> ' + line : '>'))
 				.join('\n');
-		} else if (settings.format === 'double') {
-			out = '“' + text + '”';
-		} else if (settings.format === 'corner') {
-			out = '「' + text + '」';
 		}
+		if (settings.format === 'double') return '“' + text + '”';
+		if (settings.format === 'corner') return '「' + text + '」';
+		return text;
+	}
+
+	/**
+	 * 「引用」按鈕的內容：引用格式＋（breakLine 開啟時）結尾換行，
+	 * 游標會停在下一行，可以直接接著打字。
+	 */
+	function buildPayload(text) {
+		let out = formatQuote(text);
 		if (settings.breakLine) out += '\n';
 		return out;
+	}
+
+	/** 「引用＋執行」按鈕的內容：引用格式＋換行＋執行文字（預設「執行！」）。 */
+	function buildExecPayload(text) {
+		const execLine = settings.execText && settings.execText.trim() ? settings.execText : EXEC_DEFAULT;
+		return formatQuote(text) + '\n' + execLine;
 	}
 
 	function refresh() {
@@ -320,17 +367,17 @@
 			hideBar();
 			return;
 		}
-		/* 引用需要輸入框；複製不需要（例如想複製整段回答去別的地方用）。 */
+		/* 引用／引用＋執行都需要輸入框；複製不需要（例如想複製整段回答去別的地方用）。 */
 		const composer = findComposer();
-		const canQuote = !!composer;
+		const canCompose = !!composer;
 		const canCopy = settings.showCopy;
-		if (!canQuote && !canCopy) {
+		if (!canCompose && !canCopy) {
 			hideBar();
 			return;
 		}
-		quoteText = canQuote ? text : '';
+		quoteText = canCompose ? text : '';
 		copyText = text;
-		showBar(picked.rect, { quote: canQuote, copy: canCopy });
+		showBar(picked.rect, { quote: canCompose, exec: canCompose, copy: canCopy });
 	}
 
 	function schedule() {
@@ -566,10 +613,13 @@
 		return !/\n[ \t]*\n[ \t]*$/.test(existing);
 	}
 
-	async function insertQuote(text) {
+	async function insertQuote(text, exec) {
 		const composer = findComposer();
 		if (!composer) return 'no-composer';
-		if (isTextControl(composer)) return insertIntoTextControl(composer, text) ? 'text-control' : 'failed';
+		if (isTextControl(composer)) {
+			const body = exec ? buildExecPayload(text) : buildPayload(text);
+			return insertIntoTextControl(composer, body) ? 'text-control' : 'failed';
+		}
 
 		/* 使用者在對話區選字時，輸入框其實已經失焦；這時「接著往下排」比
 		   「插在殘留游標處（常常是草稿開頭）」合理，所以先記下有沒有焦點。 */
@@ -590,7 +640,8 @@
 		const beforeModel = editor ? modelText(editor) : null;
 		const existing = beforeModel != null ? beforeModel : composer.textContent || '';
 		/* 連續引用時：前面已空一行就不再補，否則補一個換行把兩段隔開。 */
-		const payload = (needsSeparator(existing) ? '\n' : '') + buildPayload(text);
+		const payload =
+			(needsSeparator(existing) ? '\n' : '') + (exec ? buildExecPayload(text) : buildPayload(text));
 		/* 讀得到模型時以模型為準（DOM 專屬的變化不算成功）。 */
 		const modelAuthoritative = !!(editor && beforeModel !== null);
 
@@ -630,6 +681,87 @@
 		if (domInsert(composer, payload) && (await verifyChange(context))) return 'dom';
 
 		return 'failed';
+	}
+
+	/* --------------------------------------------------------- 送出訊息 */
+	/*
+	 * DSH 的送出路徑：Lexical 的 KEY_ENTER_COMMAND → handlers.submit()。
+	 * 合成 keydown（Enter）會走同一條路徑；送出成功後 DSH 會清空草稿，
+	 * 所以用「草稿內容變空」當成功訊號，避免誤報。
+	 * 失敗時退回「點 DSH 自己的送出按鈕」。
+	 */
+
+	function findSendButton(composer) {
+		const region = composer.closest(COMPOSER_REGION_SELECTOR);
+		const scope = region || document;
+		const buttons = scope.querySelectorAll('button');
+		for (let i = 0; i < buttons.length; i += 1) {
+			const button = buttons[i];
+			if (button.disabled) continue;
+			const label =
+				(button.getAttribute('aria-label') || '') +
+				' ' +
+				(button.getAttribute('title') || '') +
+				' ' +
+				(button.textContent || '');
+			if (/send|submit|送出|发送|發送/i.test(label)) return button;
+		}
+		return null;
+	}
+
+	function draftText(composer, editor) {
+		if (isTextControl(composer)) return composer.value == null ? '' : composer.value;
+		const text = editor ? modelText(editor) : null;
+		return text != null ? text : composer.textContent || '';
+	}
+
+	/**
+	 * 模擬按下 Enter 送出；回傳 'enter'（送出鍵）／'button'（送出按鈕）／''（送不出去）。
+	 * '' 的情況例如 DSH 正在回覆（machineBusy）或鎖定中，文字會留在輸入框。
+	 */
+	async function sendComposer(composer) {
+		const editor = isTextControl(composer) ? null : composer.__lexicalEditor || null;
+		const before = draftText(composer, editor);
+
+		const pressEnter = () => {
+			try {
+				composer.dispatchEvent(
+					new KeyboardEvent('keydown', {
+						key: 'Enter',
+						code: 'Enter',
+						bubbles: true,
+						cancelable: true,
+						composed: true
+					})
+				);
+				return true;
+			} catch (err) {
+				return false;
+			}
+		};
+
+		const emptied = async () => {
+			const deadline = Date.now() + SEND_TIMEOUT;
+			for (;;) {
+				await sleep(POLL_INTERVAL);
+				const now = draftText(composer, editor);
+				if (now !== before && !String(now).trim()) return true;
+				if (Date.now() >= deadline) return false;
+			}
+		};
+
+		if (pressEnter() && (await emptied())) return 'enter';
+
+		const button = findSendButton(composer);
+		if (button) {
+			try {
+				button.click();
+			} catch (err) {
+				return '';
+			}
+			if (await emptied()) return 'button';
+		}
+		return '';
 	}
 
 	/* --------------------------------------------------------- 複製文字 */
@@ -713,6 +845,36 @@
 				(document.documentElement && document.documentElement.getAttribute('data-dshq-version')) || '';
 			notify('已引用（' + (FORMAT_LABEL[settings.format] || '原文照貼') + (version ? ' · v' + version : '') + '）');
 		}
+	}
+
+	async function onExecClick(event) {
+		event.preventDefault();
+		event.stopPropagation();
+		if (busy) return;
+		const text = quoteText;
+		hideBar();
+		if (!text) return;
+		busy = true;
+		let result = 'failed';
+		let send = '';
+		try {
+			result = await insertQuote(text, true);
+			if (result !== 'no-composer' && result !== 'failed') {
+				const composer = findComposer();
+				if (composer) send = await sendComposer(composer);
+			}
+		} catch (err) {
+			result = 'failed';
+		} finally {
+			busy = false;
+		}
+		const version =
+			(document.documentElement && document.documentElement.getAttribute('data-dshq-version')) || '';
+		const label = FORMAT_LABEL[settings.format] || '原文照貼';
+		if (result === 'no-composer') notify('找不到輸入框：請先開啟一個對話');
+		else if (result === 'failed') notify('引用＋執行失敗：請於 DSH 網頁重試');
+		else if (send) notify('已引用並送出（' + label + (version ? ' · v' + version : '') + '）');
+		else notify('已插入引用與「執行」，但送不出去：請自行按 Enter');
 	}
 
 	async function onCopyClick(event) {

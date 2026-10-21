@@ -9,7 +9,14 @@
 	'use strict';
 
 	const STORAGE_KEY = 'dshQuoteSettings';
-	const DEFAULTS = { enabled: true, scope: 'conversation', format: 'double', showCopy: true, breakLine: true };
+	const DEFAULTS = {
+		enabled: true,
+		scope: 'conversation',
+		format: 'double',
+		showCopy: true,
+		breakLine: true,
+		execText: '執行！'
+	};
 
 	function apply(raw) {
 		const settings = Object.assign({}, DEFAULTS, raw || {});
@@ -22,6 +29,8 @@
 		root.setAttribute('data-dshq-format', safeFormat);
 		root.setAttribute('data-dshq-copy', settings.showCopy === false ? '0' : '1');
 		root.setAttribute('data-dshq-break', settings.breakLine === false ? '0' : '1');
+		const execText = typeof settings.execText === 'string' && settings.execText.trim() ? settings.execText : DEFAULTS.execText;
+		root.setAttribute('data-dshq-exec-text', execText);
 		try {
 			root.setAttribute('data-dshq-version', chrome.runtime.getManifest().version);
 		} catch (err) {

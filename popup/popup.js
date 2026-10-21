@@ -9,12 +9,20 @@
 
 	const STORAGE_KEY = 'dshQuoteSettings';
 	const SITES_KEY = 'dshQuoteSites';
-	const DEFAULTS = { enabled: true, scope: 'conversation', format: 'double', showCopy: true, breakLine: true };
+	const DEFAULTS = {
+		enabled: true,
+		scope: 'conversation',
+		format: 'double',
+		showCopy: true,
+		breakLine: true,
+		execText: '執行！'
+	};
 	const SITES = window.DSHQ_SITES || { BUILTIN: [], toPattern: () => ({ ok: false, error: 'sites.js 未載入' }) };
 
 	const enabledBox = document.getElementById('enabled');
 	const showCopyBox = document.getElementById('showCopy');
 	const breakLineBox = document.getElementById('breakLine');
+	const execTextInput = document.getElementById('execText');
 	const siteList = document.getElementById('siteList');
 	const siteInput = document.getElementById('siteInput');
 	const siteAdd = document.getElementById('siteAdd');
@@ -49,6 +57,7 @@
 		enabledBox.checked = value.enabled !== false;
 		showCopyBox.checked = value.showCopy !== false;
 		if (breakLineBox) breakLineBox.checked = value.breakLine !== false;
+		if (execTextInput) execTextInput.value = value.execText || DEFAULTS.execText;
 		const scope = document.querySelector('input[name="scope"][value="' + value.scope + '"]');
 		if (scope) scope.checked = true;
 		const format = document.querySelector('input[name="format"][value="' + value.format + '"]');
@@ -56,12 +65,14 @@
 	}
 
 	function save() {
+		const execRaw = execTextInput ? execTextInput.value : '';
 		const settings = {
 			enabled: enabledBox.checked,
 			showCopy: showCopyBox.checked,
 			breakLine: breakLineBox ? breakLineBox.checked : true,
 			scope: checkedValue('scope', DEFAULTS.scope),
-			format: checkedValue('format', DEFAULTS.format)
+			format: checkedValue('format', DEFAULTS.format),
+			execText: execRaw.trim() ? execRaw : DEFAULTS.execText
 		};
 		try {
 			chrome.storage.local.set({ [STORAGE_KEY]: settings });
@@ -71,6 +82,18 @@
 	}
 
 	document.addEventListener('change', save);
+
+	/* 「執行」文字邊打邊存（防抖 300ms），不用等離開欄位才生效 */
+	let execTimer = 0;
+	if (execTextInput) {
+		execTextInput.addEventListener('input', () => {
+			if (execTimer) clearTimeout(execTimer);
+			execTimer = setTimeout(() => {
+				execTimer = 0;
+				save();
+			}, 300);
+		});
+	}
 
 	/* 標題旁顯示版本，方便分辨同時安裝的舊版 */
 	try {

@@ -16,7 +16,7 @@
       </span>
       <div class="titles">
         <h1>DSH 引用助手 <span class="ver" id="ver"></span></h1>
-        <p>框選文字 →「引用」送進輸入框／「複製」進剪貼簿</p>
+        <p>框選文字 →「引用」「引用＋執行」送進輸入框、「複製」進剪貼簿</p>
       </div>
     </header>
 
@@ -33,6 +33,11 @@
     <label class="row">
       <span class="row-label">引用後換行（游標到下一行）</span>
       <input type="checkbox" id="breakLine" />
+    </label>
+
+    <label class="row textrow" for="execText">
+      <span class="row-label">「引用＋執行」的執行文字</span>
+      <input type="text" id="execText" maxlength="40" placeholder="執行！" spellcheck="false" />
     </label>
 
     <section class="group">
